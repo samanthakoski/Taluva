@@ -101,7 +101,6 @@ function canvasApp(){
 		drawHex(firstHex.center);
 		context.closePath();
 		context.stroke();
-		console.log("YOOOOO: " + firstHex.color);
 		context.fillStyle = firstHex.color;
 		context.fill();
 		if (firstHex.color == VOLCANOCOLOR) {
@@ -112,7 +111,6 @@ function canvasApp(){
 		context.beginPath();
 		drawHex(secondHex.center);
 		context.closePath();
-		console.log("YEEEEET: " + secondHex.color);
 		context.fillStyle = secondHex.color;
 		context.fill();
 		if (secondHex.color == VOLCANOCOLOR) {
@@ -123,7 +121,6 @@ function canvasApp(){
 		context.beginPath();
 		drawHex(thirdHex.center);
 		context.closePath();
-		console.log("YEEEEHAWWW: " + thirdHex.color);
 		context.fillStyle = thirdHex.color;
 		context.fill();	
 		if (thirdHex.color == VOLCANOCOLOR) {
