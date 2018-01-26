@@ -13,6 +13,15 @@ function canvasApp(){
     		return;
   	}
   	// type: 1 is two Up, type:2 is two down
+	/*
+	HEX POSITIONS: 
+		1=soloTop
+		2=leftBottom
+		3=rightBottom
+		4=leftTop
+		5=rightTop
+		6=soloBottom
+	*/
   	var context = theCanvas.getContext('2d');
 	var horz = Math.sqrt(3)/2 * 50;
 	var vert = 50 * 3/4;
@@ -61,15 +70,15 @@ function canvasApp(){
 			type = Math.floor(Math.random() * 2) + 1;
 			if (type == 1) {
 				if (i == 0 || i % 2 == 0) {
-					tiles[i] = drawTileTwoUp(new Hex(new Point(50, 50), getColor()));
+					tiles[i] = drawTileTwoUp(new Hex(new Point(50, 50), getColor(false), 4));
 				} else {
-					tiles[i] = drawTileTwoUp(new Hex(new Point(45, 55), getColor()));
+					tiles[i] = drawTileTwoUp(new Hex(new Point(45, 55), getColor(false), 4));
 				}
 			} else {
 				if (i == 0 || i % 2 == 0) {
-					tiles[i] = drawTileTwoDown(new Hex(new Point(50, 50), getColor()));
+					tiles[i] = drawTileTwoDown(new Hex(new Point(50, 50), getColor(false), 1));
 				} else {
-					tiles[i] = drawTileTwoDown(new Hex(new Point(45, 55), getColor()));
+					tiles[i] = drawTileTwoDown(new Hex(new Point(45, 55), getColor(false), 1));
 				}
 			}
 		}
@@ -97,32 +106,63 @@ function canvasApp(){
 	}
 
 	function drawTileTwoUp(firstHex) {
+		var hasVolcano = false;
+		if (firstHex.color == VOLCANOCOLOR) {
+			hasVolcano = true;
+		}
 		context.beginPath();
 		drawHex(firstHex.center);
 		context.closePath();
-		context.stroke();
 		context.fillStyle = firstHex.color;
 		context.fill();
+		context.strokeStyle = "white";
+		context.stroke();
 		if (firstHex.color == VOLCANOCOLOR) {
 			addArrow(firstHex);
 		}
 		
-		var secondHex = new Hex(new Point(firstHex.center.x + horz, firstHex.center.y), getColor());
+		var secondHex = new Hex(new Point(firstHex.center.x + horz, firstHex.center.y), getColor(hasVolcano), 5);
+		if (secondHex.color == VOLCANOCOLOR) {
+			hasVolcano = true;
+		}
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(secondHex.center);
 		context.closePath();
 		context.fillStyle = secondHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (secondHex.color == VOLCANOCOLOR) {
 			addArrow(secondHex);
 		}
-
-		var thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor());
+		
+		var thirdHex;
+		if (!hasVolcano) {
+			thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), VOLCANOCOLOR, 6);
+		} else {
+			thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor(hasVolcano), 6);
+		}
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(thirdHex.center);
 		context.closePath();
 		context.fillStyle = thirdHex.color;
 		context.fill();	
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (thirdHex.color == VOLCANOCOLOR) {
 			addArrow(thirdHex);
 		}
@@ -131,29 +171,55 @@ function canvasApp(){
 	
 	function reDrawTwoUp(tile) {
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.firstHex.center);
 		context.closePath();
-		context.stroke();
 		context.fillStyle = tile.firstHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.firstHex.color == VOLCANOCOLOR) {
 			addArrow(tile.firstHex);
 		}
 		
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.secondHex.center);
 		context.closePath();
 		context.fillStyle = tile.secondHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.secondHex.color == VOLCANOCOLOR) {
 			addArrow(tile.secondHex);
 		}
 
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.thirdHex.center);
 		context.closePath();
 		context.fillStyle = tile.thirdHex.color;
 		context.fill();	
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.thirdHex.color == VOLCANOCOLOR) {
 			addArrow(tile.thirdHex);
 		}
@@ -161,33 +227,70 @@ function canvasApp(){
 	}
 	
 	function drawTileTwoDown(firstHex) {
+		var hasVolcano = false;
+		if (firstHex.color == VOLCANOCOLOR) {
+			hasVolcano = true;
+		}
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(firstHex.center);
 		context.closePath();
-		context.stroke();
 		context.fillStyle = firstHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (firstHex.color == VOLCANOCOLOR) {
 			addArrow(firstHex);
 		}
 
-		var secondHex = new Hex(new Point(firstHex.center.x - (horz/2), firstHex.center.y + vert), getColor());
+		var secondHex = new Hex(new Point(firstHex.center.x - (horz/2), firstHex.center.y + vert), getColor(hasVolcano), 2);
+		if (secondHex.color == VOLCANOCOLOR) {
+			hasVolcano = true;
+		}
 		context.beginPath();
-		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(secondHex.center);
 		context.closePath();
 		context.fillStyle = secondHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (secondHex.color == VOLCANOCOLOR) {
 			addArrow(secondHex);
 		}
 
-		var thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor());
+		var thirdHex; 
+		if (!hasVolcano) {
+			thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), VOLCANOCOLOR, 3);
+		} else {
+			thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor(hasVolcano), 3);
+		}
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(thirdHex.center);
 		context.closePath();
 		context.fillStyle = thirdHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (thirdHex.color == VOLCANOCOLOR) {
 			addArrow(thirdHex);
 		}
@@ -196,30 +299,55 @@ function canvasApp(){
 	
 	function reDrawTwoDown(tile) {
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.firstHex.center);
 		context.closePath();
-		context.stroke();
 		context.fillStyle = tile.firstHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.firstHex.color == VOLCANOCOLOR) {
 			addArrow(tile.firstHex);
 		}
 
 		context.beginPath();
-		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.secondHex.center);
 		context.closePath();
 		context.fillStyle = tile.secondHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.secondHex.color == VOLCANOCOLOR) {
 			addArrow(tile.secondHex);
 		}
 
 		context.beginPath();
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
 		drawHex(tile.thirdHex.center);
 		context.closePath();
 		context.fillStyle = tile.thirdHex.color;
 		context.fill();
+		context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
+		context.shadowBlur = 0;
+		context.strokeStyle = "white";
+		context.stroke();
 		if (tile.thirdHex.color == VOLCANOCOLOR) {
 			addArrow(tile.thirdHex);
 		}
@@ -245,16 +373,46 @@ function canvasApp(){
 		return new Point(center.x + size * Math.cos(angle_rad), center.y + size * Math.sin(angle_rad));
 	}
 	
-	function getColor() {
-		return colors[Math.floor(Math.random() * 6)];
+	function getColor(hasVolcano) {
+		var num = Math.floor(Math.random() *3);
+		if (num == 2 && !hasVolcano) {
+			return VOLCANOCOLOR;
+		}
+		console.log(num);
+		var color = colors[Math.floor(Math.random() * 6)];
+		if (hasVolcano) {
+			while (color == VOLCANOCOLOR) {
+				color = colors[Math.floor(Math.random() * 6)];
+			}
+		}
+		return color;
 	}
 	
 	function addArrow(hex) {
-		var headlen = 10;  
+		var headlen = 5;  
 		var fromx = hex.center.x;
 		var fromy = hex.center.y;
-		var tox = hex.center.x + 15;
-		var toy = hex.center.y + 15; 
+		var tox;
+		var toy;
+		if (hex.position == 1) {
+			tox = hex.center.x + 12;
+			toy = hex.center.y + 12;
+		} else if (hex.position == 2) {
+			tox = hex.center.x + 12;
+			toy = hex.center.y - 12;
+		} else if (hex.position == 3) {
+			tox = hex.center.x - 12;
+			toy = hex.center.y;
+		} else if (hex.position == 4) {
+			tox = hex.center.x + 12;
+			toy = hex.center.y;
+		} else if (hex.position == 5) {
+			tox = hex.center.x - 12;
+			toy = hex.center.y + 12;
+		} else {
+			tox = hex.center.x - 12;
+			toy = hex.center.y - 12;
+		}
 		var angle = Math.atan2(toy-fromy,tox-fromx);
 		context.beginPath();
 		context.moveTo(fromx, fromy);
@@ -262,6 +420,7 @@ function canvasApp(){
 		context.lineTo(tox-headlen*Math.cos(angle-Math.PI/6),toy-headlen*Math.sin(angle-Math.PI/6));
 		context.moveTo(tox, toy);
 		context.lineTo(tox-headlen*Math.cos(angle+Math.PI/6),toy-headlen*Math.sin(angle+Math.PI/6));
+		context.strokeStyle = "black";
 		context.stroke();
 		context.closePath();
 	}
@@ -301,9 +460,10 @@ function canvasApp(){
 		this.y = y;
 	}
 	
-	function Hex(center, color) {
+	function Hex(center, color, position) {
 		this.center = center;
 		this.color = color;
+		this.position = position;
 	}
 	
 	function Tile(firstHex, secondHex, thirdHex, type) {
