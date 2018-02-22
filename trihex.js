@@ -581,7 +581,6 @@ function canvasApp(){
 							drawTowerMustBeAddedToSettlementText();
 						} else {
 							add = isAddingToSettlement(position);
-							console.log(add);
 							if (add[0] == true) {
 								if (!hasTower(settlements[add[1]])) {
 									settlements[add[1]].push(curTower);
@@ -630,7 +629,6 @@ function canvasApp(){
 					} else {
 						curHut.position = position;
 						boardBuildingArray.push(curHut);
-						console.log(settlements);
 						if (settlements.length == 0) {
 							var settlement = [];
 							settlement.push(curHut);
@@ -662,6 +660,8 @@ function canvasApp(){
 						drawBuildingNotOnAFieldText();
 					} else if (ok[1] == 1) {
 						drawBuildingOnAVolcanoText();
+					} else if (ok[1] == 4){
+						drawHutMustBeOnOne();
 					} else {
 						drawTowerNeedsToBeOnLevelThree();
 					}
@@ -826,7 +826,7 @@ function canvasApp(){
 		
 	}
 	
-	// 0 = not on a field, 1 = on a volcano, 2 = tower not on lvl 3, 3 = tower field not empty
+	// 0 = not on a field, 1 = on a volcano, 2 = tower not on lvl 3, 3 = tower field not empty, 4 = hut must be level 1 empty
 	function putBuildingOnTile(position, type) {
 		var row = position[0];
 		var col = position[1];
@@ -837,13 +837,16 @@ function canvasApp(){
 			return [false, 1];
 		}
 		if (type == "hut") {
+			if (settlements.length == 0) {
+				if (theGrid[row][col].level > 1) {
+					return [false, 4]; 
+				}
+			}
 			theGrid[row][col].buildings.push(curHut);
 			return [true, -1];
 		}
 		if (type == "tower") {
-			console.log(theGrid[row][col].level);
 			if (theGrid[row][col].level < 3) {
-				console.log("not high enough level");
 				return [false, 2];
 			}  else {
 				if (theGrid[row][col].buildings.length > 0) {
@@ -1578,6 +1581,22 @@ function canvasApp(){
 		context.font = "35px Arial";
 		context.strokeText("Tower must be on an empty level three field.", 100, 300);
 		context.fillText("Tower must be on an empty level three field.", 100, 300);
+	}
+	
+	function drawHutMustBeOnOne() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("New settlement must be started on an empty level one field.", 100, 300);
+		context.fillText("New settlement must be started on an empty level one field.", 100, 300);
 	}
 	
 	// ok for now
