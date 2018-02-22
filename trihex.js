@@ -57,10 +57,7 @@ function canvasApp(){
 	function drawScreen() {
 		
 		
-		var fillImg = new Image();  
-		fillImg.src = 'fill_20x20.gif';  
 		
-		fillImg.onload = function(){  
 			//context.fillStyle = "blue";
 			//context.fillRect(0, 0, 1000, 1000);
 			theGrid = generateGridArray();
@@ -85,7 +82,7 @@ function canvasApp(){
 			drawPlayerText();
 			drawSettlementText();
 			drawBuildingText();
-		}
+		
 	}
 	
 	//works
