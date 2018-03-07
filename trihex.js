@@ -25,12 +25,39 @@ function canvasApp(){
 	var colors = [JUNGLECOLOR, GRASSCOLOR, DESERTCOLOR, QUARRYCOLOR, LAGOONCOLOR, VOLCANOCOLOR];
 	var stackTileArray;
 	var boardTileArray = [];
+	var hutsToPlace = 0;
+	var player1 = new Player(1);
+	var player2 = new Player(2);
 	var boardBuildingArray = [];
-	var templeArrayLen = 0;
-	var towerArrayLen = 0;
-	var hutArrayLen = 0;
+	var templeArrayLen1 = 0;
+	var towerArrayLen1 = 0;
+	var templeArrayLen2 = 0;
+	var towerArrayLen2 = 0;
+	var expanding = false;
+	var hutArrayLen1 = 0;
+	var hutArrayLen2 = 0;
 	var theGrid = [];
+	var terrainHexs = [];
+	var placing = false;
+	var placingHuts = false;
+	var terrainColor = -1;
+	var chosenSettlement = 0;
+	var chosenSettlementIndex = -1;
 	var settlements = [];
+	var jungleRight = 13;
+	var jungleLeft = 15;
+	var grassRight = 12;
+	var grassLeft = 11;
+	var desertRight = 9;
+	var desertLeft = 10;
+	var quarryRight = 8;
+	var quarryLeft = 7;
+	var lagoonRight = 6;
+	var hutsToPlace = 0;
+	var lagoonLeft = 5;
+	var player = 1;
+	var picking = false;
+	var curTurn = new Turn(player1, false, false);
 	var curTile;
 	var curHut;
 	var curTower;
@@ -53,7 +80,7 @@ function canvasApp(){
   	}
 	
 	drawScreen(); 
-	// huts = purple, temples = pink, towers = black
+	// player1 = purple, player2 = blue
 	function drawScreen() {
 		
 		
@@ -65,23 +92,33 @@ function canvasApp(){
 			context.shadowOffsetX = 4;
 			context.shadowOffsetY = 4;
 			context.shadowColor = 'black';
-			context.shadowBlur = 4;
 			context.fillStyle = 'rgba(209, 173, 113, 1)';
-			context.fillRect(0, 0, 200, 500);
-			stackTileArray = generateTileArray(48);
-			templeArrayLen = 12;
-			towerArrayLen = 8;
-			hutArrayLen = 80;
+			context.fillRect(0, 0, 200, 540);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			context.fillStyle = "purple"
+			context.fillRect(40, 490, 130, 30);
+			drawExpandText();
+			stackTileArray = generateTileArray(24);
+			templeArrayLen1 = 3;
+			towerArrayLen1 = 2;
+			hutArrayLen1 = 20;
+			templeArrayLen2 = 3;
+			towerArrayLen2 = 2;
+			hutArrayLen2 = 20;
 			curTemple =new Building(new Point(90, 330), "purple", "temple");
 			curHut = new Building(new Point(90, 230), "purple", "hut");
 			curTower = new Building(new Point(90, 430), "purple", "tower");
 			curTile = stackTileArray[0];
 			drawTile(curTile, true);
 			drawBuildings();
-			drawRemainingText(stackTileArray.length, templeArrayLen, towerArrayLen, hutArrayLen);
-			drawPlayerText();
+			drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+			drawPlayerText(curTurn.player.num);
+			drawPlaceTileText();
 			drawSettlementText();
 			drawBuildingText();
+			
 		
 	}
 	
@@ -117,6 +154,47 @@ function canvasApp(){
 		}	
 	}
 	
+	function drawSelectedSettlement(settlement) {
+		for (var i = 0; i < settlement.length; i++) {
+			var position = settlement[i].position
+			var corners = theGrid[position[0]][position[1]].corners;
+			context.beginPath();
+			context.strokeStyle = "yellow";
+			context.lineWidth = 3;
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			context.moveTo(corners[0].x, corners[0].y);
+			for (var j = 1; j < corners.length; j++) {
+				context.lineTo(corners[j].x, corners[j].y);
+				context.moveTo(corners[j].x, corners[j].y);
+			}
+			context.lineTo(corners[0].x, corners[0].y);
+			context.stroke();
+			context.closePath();
+		}
+	}
+	
+	function drawSelectedTerrain(hexs) {
+		for (var i = 0; i < hexs.length; i++) {
+			var corners = hexs[i].corners;
+			context.beginPath();
+			context.strokeStyle = "yellow";
+			context.lineWidth = 3;
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			context.moveTo(corners[0].x, corners[0].y);
+			for (var j = 1; j < corners.length; j++) {
+				context.lineTo(corners[j].x, corners[j].y);
+				context.moveTo(corners[j].x, corners[j].y);
+			}
+			context.lineTo(corners[0].x, corners[0].y);
+			context.stroke();
+			context.closePath();
+		}
+	}
+	
 	function generateGridArray() {
 		var grid = [];
 		var x = 60;
@@ -150,16 +228,81 @@ function canvasApp(){
 	
 	// ok for now
 	function makeTile(firstHex) {
-		var secondHex = new Hex(new Point(firstHex.center.x - (horz/2), firstHex.center.y + vert), getColor());
-		var thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor());
+		var secondHex = new Hex(new Point(firstHex.center.x - (horz/2), firstHex.center.y + vert), getColor(2));
+		var thirdHex = new Hex(new Point(firstHex.center.x + (horz/2), firstHex.center.y + vert), getColor(3));
 		return new Tile(firstHex, secondHex, thirdHex);
 	}
 	
 	// ok for now
-	function getColor() {
-		var color = colors[Math.floor(Math.random() * 6)];
+	function getColor(num) {
+		var color = VOLCANOCOLOR;
 		while (color == VOLCANOCOLOR) {
 			color = colors[Math.floor(Math.random() * 6)];
+			if (num == 2) {
+				if (color == JUNGLECOLOR) {
+					if (jungleLeft > 0) {
+						jungleLeft -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == GRASSCOLOR) {
+					if (grassLeft > 0) {
+						grassLeft -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == DESERTCOLOR) {
+					if (desertLeft > 0) {
+						desertLeft -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == QUARRYCOLOR) {
+					if (quarryLeft > 0) {
+						quarryLeft -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == LAGOONCOLOR) {
+					if (lagoonLeft > 0) {
+						lagoonLeft -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				}
+			} else {
+				if (color == JUNGLECOLOR) {
+					if (jungleRight > 0) {
+						jungleRight -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == GRASSCOLOR) {
+					if (grassRight > 0) {
+						grassRight -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == DESERTCOLOR) {
+					if (desertRight > 0) {
+						desertRight -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == QUARRYCOLOR) {
+					if (quarryRight > 0) {
+						quarryRight -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				} else if (color == LAGOONCOLOR) {
+					if (lagoonRight > 0) {
+						lagoonRight -= 1;
+					} else {
+						color = VOLCANOCOLOR;
+					}
+				}
+			}
 		}
 		return color;
 	}
@@ -391,24 +534,74 @@ function canvasApp(){
 		var my = e.clientY - 50;
 		dragok = false;
 	
+		if (placingHuts) {
+			if (clickInBuilding(mx, my, curTower) || clickInBuilding(mx, my, curTemple)) {
+				terrainHexs = getTerrainHexs(chosenSettlement, terrainColor);
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawSelectedTerrain(terrainHexs);
+				drawMustPlaceHutsText();
+			} 
+			
+		}
+	
 		if (curTile.contains(mx, my)) {
-			dragok = true;
-			curTile.isDragging = true;
+			if (curTurn.placedTile) {
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawAlreadyPlacedTileText();
+			} else {
+				dragok = true;
+				curTile.isDragging = true;
+			}
 		}
 		if (clickInBuilding(mx, my, curHut)) {
-			dragok = true;
-			curBuilding = 1;
-			curHut.isDragging = true;
+			if (!curTurn.placedTile) {
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawPlaceTileFirstText();
+			} else {
+				dragok = true;
+				curBuilding = 1;
+				curHut.isDragging = true;
+			}
 		}
 		if (clickInBuilding(mx, my, curTemple)) {
-			dragok = true;
-			curBuilding = 2;
-			curTemple.isDragging = true;
+			if (!curTurn.placedTile) {
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawPlaceTileFirstText();
+			} else {
+				dragok = true;
+				curBuilding = 2;
+				curTemple.isDragging = true;
+			}
 		}
 		if (clickInBuilding(mx, my, curTower)) {
-			dragok = true;
-			curBuilding = 3;
-			curTower.isDragging = true;
+			if (!curTurn.placedTile) {
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawPlaceTileFirstText();
+			} else {
+				dragok = true;
+				curBuilding = 3;
+				curTower.isDragging = true;
+			}
 		}
 
 		startX = mx;
@@ -459,14 +652,158 @@ function canvasApp(){
 	
 	// ok for now
 	function onMouseClick(e) {
-		return;
+		e.preventDefault();
+		e.stopPropagation();
+		var mx = e.clientX - 50;
+		var my = e.clientY - 50;
+		
+		if (picking) {
+			terrainColor = pickingATerrain(mx, my, chosenSettlement);
+			if (terrainColor == -1) {
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawMustClickOnAdjTerrainText();
+			}
+			else {
+				picking = false;
+				placing = true;
+			}
+		}
+		
+		if (placing) {
+			console.log("PLACING");
+			terrainHexs = getTerrainHexs(chosenSettlement, terrainColor);
+			console.log("ORIG TERRAIN HEXS");
+			console.log(terrainHexs);
+			hutsToPlace = getHutNum(terrainHexs);
+			console.log(hutsToPlace);
+			context.clearRect(0, 0, 1000, 1000);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			drawGrid();
+			drawSelectedTerrain(terrainHexs);
+			context.shadowOffsetX = 4;
+			context.shadowOffsetY = 4;
+			context.shadowColor = 'black';
+			context.fillStyle = 'rgba(209, 173, 113, 1)';
+			context.fillRect(0, 0, 200, 540);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			if (curTurn.player.num == 1) {
+				context.fillStyle = "purple";
+			} else {
+				context.fillStyle = "blue";
+			}
+			context.fillRect(40, 490, 130, 30);
+			drawExpandText();
+			drawTile(curTile, true);
+			drawBuildings();
+			if (curTurn.player.num == 1) {
+				drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+			} else {
+				drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+			}
+			drawPlayerText(curTurn.player.num);
+			drawSettlementText();
+			drawBuildingText();
+			drawPlaceBuildingsText();
+			placing = false;
+			placingHuts = true;
+		}
+		
+		if (expanding) {
+			var clicked = clickOnASettlement(mx, my, curTurn.player.settlements);
+			if (clicked >= 0) {
+				// highlight that settlement
+				chosenSettlement = curTurn.player.settlements[clicked];
+				chosenSettlementIndex = clicked;
+				context.clearRect(0, 0, 1000, 1000);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				drawGrid();
+				drawSelectedSettlement(chosenSettlement);
+				context.shadowOffsetX = 4;
+				context.shadowOffsetY = 4;
+				context.shadowColor = 'black';
+				context.fillStyle = 'rgba(209, 173, 113, 1)';
+				context.fillRect(0, 0, 200, 540);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				if (curTurn.player.num == 1) {
+					context.fillStyle = "purple";
+				} else {
+					context.fillStyle = "blue";
+				}
+				context.fillRect(40, 490, 130, 30);
+				drawExpandText();
+				drawTile(curTile, true);
+				drawBuildings();
+				if (curTurn.player.num == 1) {
+					drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+				} else {
+					drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+				}
+				drawPlayerText(curTurn.player.num);
+				drawSettlementText();
+				drawBuildingText();
+				drawChooseTerrainText();
+				picking = true;
+				exanding = false;
+				
+				// prompt user to click on a terain type
+				// highlight new owned hex's 
+				// player must put one hut for each level on each newly owned hex
+			}
+		}
+		
+		if (clickOnExpand(mx, my)) {
+			context.clearRect(0, 0, 1000, 1000);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			drawGrid();
+			context.shadowOffsetX = 4;
+			context.shadowOffsetY = 4;
+			context.shadowColor = 'black';
+			context.fillStyle = 'rgba(209, 173, 113, 1)';
+			context.fillRect(0, 0, 200, 540);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			context.fillStyle = "purple"
+			context.fillRect(40, 490, 130, 30);
+			drawExpandText();
+			drawTile(curTile, true);
+			drawBuildings();
+			if (curTurn.player.num == 1) {
+				drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+			} else {
+				drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+			}
+			drawPlayerText(curTurn.player.num);
+			drawSettlementText();
+			drawBuildingText();
+			drawClickOnSettlementText();
+			expanding = true;
+			console.log(expanding);
+				
+			
+			
+		}
 	}
 	
 	// working on
 	function onMouseUp(e) {
 		e.preventDefault();
 		e.stopPropagation();
-		
+		var drawAll = false;
 		dragok = false;
 		if (curTile.isDragging) {
 			curTile.isDragging = false;
@@ -483,10 +820,6 @@ function canvasApp(){
 				context.fillStyle = 'rgba(209, 173, 113, 1)';
 				context.shadowOffsetX = 4;
 				context.shadowOffsetY = 4;
-				//context.shadowColor = 'black';
-				//context.shadowBlur = 4;
-				//context.fillRect(0, 0, 200, 500);
-				//drawPlayerText();
 				if (ok[1] == 0) {
 					drawOverlappingText();
 				} else if (ok[1] == -2) {
@@ -495,8 +828,12 @@ function canvasApp(){
 					drawWrongLevelsText();
 				} else if (ok[1] == -3) {
 					drawNotVolColorText();
-				} else {
+				} else if (ok[1] == -4) {
 					drawSameDirectionText();
+				} else if (ok[1] == -5) {
+					drawDontCoverTempleText();
+				} else {
+					drawCantCoverFullSettle();
 				}
 			} else {
 				context.clearRect(0, 0, 1000, 1000);
@@ -509,24 +846,47 @@ function canvasApp(){
 				context.shadowOffsetY = 8;
 				context.shadowColor = 'black';
 				context.shadowBlur = 8;
-				context.fillRect(0, 0, 200, 500);
+				context.fillRect(0, 0, 200, 540);
+				context.shadowOffsetX = 0;
+				context.shadowOffsetY = 0;
+				context.shadowBlur = 0;
+				context.fillStyle = "purple"
+				context.fillRect(40, 490, 130, 30);
+				drawExpandText();
+				if (placing || placingHuts) {
+					drawSelectedTerrain(terrainHexs);
+				}
 				boardTileArray.push(curTile);
-		
+				
+				curTurn.placedTile = true;
+				
+				
 				stackTileArray.shift();
 				if (stackTileArray.length == 0) {
-					noMoreTilesText();
-					drawPlayerText();
+					//noMoreTilesText();
+					if (curTurn.player.num == 1) {
+						drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+					} else {
+						drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+					}
+					drawPlayerText(curTurn.player.num);
 					drawBuildingText();
 					drawSettlementText();
 					drawBuildings();
+					drawPlaceBuildingText();
 				} else {
 					curTile = stackTileArray[0];
 					drawTile(curTile, true);
-					drawRemainingText(stackTileArray.length, templeArrayLen, towerArrayLen, hutArrayLen);
-					drawPlayerText();
+					if (curTurn.player.num == 1) {
+						drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+					} else {
+						drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+					}
+					drawPlayerText(curTurn.player.num);
 					drawBuildingText();
 					drawSettlementText();
 					drawBuildings();
+					drawPlaceBuildingText();
 				}
 			}
 		} else if (curBuilding > 0) {
@@ -555,21 +915,8 @@ function canvasApp(){
 			if (isDrag) {
 				if (ok[0]) {
 					var add = 0;
-					context.clearRect(0, 0, 1000, 1000);
-					context.shadowOffsetX = 0;
-					context.shadowOffsetY = 0;
-					context.shadowBlur = 0;
-					drawGrid();
-					context.fillStyle = 'rgba(209, 173, 113, 1)';
-					context.shadowOffsetX = 8;
-					context.shadowOffsetY = 8;
-					context.shadowColor = 'black';
-					context.shadowBlur = 8;
-					context.fillRect(0, 0, 200, 500);
 					if (typeDrag == "to") {
-						curTower.position = position;
-						boardBuildingArray.push(curTower);
-						if (settlements.length == 0) {
+						if (curTurn.player.settlements.length == 0) {
 							context.clearRect(0, 0, 1000, 1000);
 							context.shadowOffsetX = 0;
 							context.shadowOffsetY = 0;
@@ -579,8 +926,44 @@ function canvasApp(){
 						} else {
 							add = isAddingToSettlement(position);
 							if (add[0] == true) {
-								if (!hasTower(settlements[add[1]])) {
-									settlements[add[1]].push(curTower);
+								var hasTower;
+								if (curTurn.player.num == 1) {
+									hasTower = hasTower(player1.settlements, add[1]);
+								} else {
+									hasTower = hasTower(player2.settlements, add[1]);
+								}
+								if (!hasTower) {
+									curTower.position.push(position[0][0]);
+									curTower.position.push(position[1][0]);
+									if (curTurn.player.num == 1) {
+										if (add[1].length > 1) {
+											player1.settlements = putInMultSettlements(player1.settlements, "tower", add[1]);
+										} else {
+											player1.settlements[add[1]].push(curTower);
+										}
+										player1.towerCount += 1;
+									} else {
+										if (add[1].length > 1) {
+											player2.settlements = putInMultSettlements(player2.settlements, "tower", add[1]);
+										} else {
+											player2.settlements[add[1]].push(curTower);
+										}
+										player2.towerCount += 1;
+									}
+									boardBuildingArray.push(curTower);
+									theGrid[curTower.position[0]][curTower.position[1]].buildings.push(curTower);
+									if (curTurn.player.num == 1) {
+										towerArrayLen1 -= 1;
+										if (towerArrayLen1 > 0) {
+											curTower = new Building(new Point(90, 430), "purple", "tower");
+										}
+									} else {
+										towerArrayLen2 -= 1;
+										if (towerArrayLen2 > 0) {
+											curTower = new Building(new Point(90, 430), "blue", "tower");
+										}
+									}
+									drawAll = true;
 								} else {
 									context.clearRect(0, 0, 1000, 1000);
 									context.shadowOffsetX = 0;
@@ -598,60 +981,296 @@ function canvasApp(){
 								drawTowerMustBeAddedToSettlementText();
 							}
 						}
-						towerArrayLen -= 1;
-						if (towerArrayLen > 0) {
-							curTower = new Building(new Point(20, 430), "purple", "tower");
-						}
 					} else if (typeDrag == "te") {
 						curTemple.position = position;
-						boardBuildingArray.push(curTemple);
-						if (settlements.length == 0) {
-							var settlement = [];
-							settlement.push(curTemple);
-							settlements.push(settlement);
-						} else {
-							add = isAddingToSettlement(position);
-							if (add[0] == true) {
-								settlements[add[1]].push(curTemple);
+						add = isAddingToSettlement(position);
+						var hasTemple;
+						var settleLength = 0;
+						if (curTurn.player.num == 1) {
+							if (player1.settlements.length == 0) {
+								context.clearRect(0, 0, 1000, 1000);
+								context.shadowOffsetX = 0;
+								context.shadowOffsetY = 0;
+								context.shadowBlur = 0;
+								drawGrid()
+								drawTempleMustBeAddedToSettlementText();
 							} else {
-								var settlement = [];
-								settlement.push(curTemple);
-								settlements.push(settlement);
+								hasTemple = hasTemple(player1.settlements, add[1]);
+								settleLength = player1.settlements[add[1][0]].length;
+							}
+						} else {
+							if (player2.settlements.length == 0) {
+								context.clearRect(0, 0, 1000, 1000);
+								context.shadowOffsetX = 0;
+								context.shadowOffsetY = 0;
+								context.shadowBlur = 0;
+								drawGrid()
+								drawTempleMustBeAddedToSettlementText();
+							} else {
+								hasTemple = hasTemple(player2.settlements, add[1]);
+								settleLength = player2.settlements[add[1][0]].length;
 							}
 						}
-						templeArrayLen -= 1;
-						if (templeArrayLen > 0) {
-							curTemple = new Building(new Point(20, 330), "purple", "temple");
+						if (add[0] == true) {
+							if (!hasTemple && settleLength >= 3) {
+								curTemple.position.push(position[0][0]);
+								curTemple.position.push(position[1][0]);
+								if (curTurn.player.num == 1) {
+									if (add[1].length > 1) {
+										player1.settlements = putInMultSettlements(player1.settlements, "temple", add[1])
+									} else {
+										player1.settlements[add[1][0]].push(curTemple);
+									}
+									player1.templeCount += 1;
+								} else {
+									if (add[1].length > 1) {
+										player2.settlements = putInMultSettlements(player2.settlements, "temple", add[1])
+									} else {
+										player2.settlements[add[1][0]].push(curTemple);
+									}
+									player2.temleCount += 1;
+								}
+								boardBuildingArray.push(curTemple);
+								theGrid[curTemple.position[0]][curTemple.position[1]].buildings.push(curTemple);
+								if (curTurn.player.num == 1) {
+									templeArrayLen1 -= 1;
+									if (templeArrayLen1 > 0) {
+										curTemple = new Building(new Point(90, 330), "purple", "temple");
+									}
+								} else {
+									templeArrayLen2 -= 1;
+									if (templeArrayLen2 > 0) {
+										curTemple = new Building(new Point(90, 330), "blue", "temple");
+									}
+								}
+								drawAll = true;
+							} else if (hasTemple) {
+								context.clearRect(0, 0, 1000, 1000);
+								context.shadowOffsetX = 0;
+								context.shadowOffsetY = 0;
+								context.shadowBlur = 0;
+								drawGrid();
+								drawSettlementHasTempleText();
+							} else {
+								context.clearRect(0, 0, 1000, 1000);
+								context.shadowOffsetX = 0;
+								context.shadowOffsetY = 0;
+								context.shadowBlur = 0;
+								drawGrid();
+								drawSettlementMustBeLengthThreeText();
+							}
+						} else {
+							context.clearRect(0, 0, 1000, 1000);
+							context.shadowOffsetX = 0;
+							context.shadowOffsetY = 0;
+							context.shadowBlur = 0;
+							drawGrid()
+							drawTempleMustBeAddedToSettlementText();
 						}
 					} else {
-						curHut.position = position;
+						curHut.position.push(position[0][0]);
+						curHut.position.push(position[1][0]);
 						boardBuildingArray.push(curHut);
-						if (settlements.length == 0) {
-							var settlement = [];
-							settlement.push(curHut);
-							settlements.push(settlement);
-						} else {
-							add = isAddingToSettlement(position);
-							if (add[0] == true) {
-								settlements[add[1]].push(curHut);
+						if (curTurn.player.num == 1) {
+							if (placingHuts) {
+								player1.settlements[chosenSettlementIndex].push(curHut);
+								hutsToPlace -= 1;
+								console.log("grid builidng length: " + theGrid[position[0][0]][position[1][0]].buildings.length);
+								console.log("grid level: " + theGrid[position[0][0]][position[1][0]].level);
+								if(theGrid[position[0][0]][position[1][0]].buildings.length >= theGrid[position[0][0]][position[1][0]].level) {
+									var index = -1;
+									console.log("terr hexs before");
+									console.log(terrainHexs);
+									for (var i = 0; i < terrainHexs.length; i++) {
+										if (terrainHexs[position[0]] == position[0][0] && terrainHexs[position[1]] == position[1][0]) {
+											console.log("INDEX" +  i);
+											index = i;
+											break;
+										}
+									}
+									terrainHexs.splice(index, 1);
+									console.log("terr hexs after");
+									console.log(terrainHexs);
+								}
+								if (hutsToPlace == 0) {
+									placing = false;
+									placingHuts = false;
+								}
 							} else {
-								var settlement = [];
-								settlement.push(curHut);
-								settlements.push(settlement);
+								if (player1.settlements.length == 0) {
+									var settlement = [];
+									settlement.push(curHut);
+									player1.settlements.push(settlement);
+									player1.hutCount += 1;
+								} else {
+									add = isAddingToSettlement(position, player1.settlements);
+									if (add[0]) {
+										if (add[1].length > 1) {
+											player1.settlements = putInMultSettlements(player1.settlements, "hut", add[1]);
+										} else {
+											player1.settlements[add[1][0]].push(curHut);
+										}
+										player1.hutCount += 1;
+									} else {
+										var settlement = [];
+										settlement.push(curHut);
+										player1.settlements.push(settlement);
+										player1.hutCount += 1;
+									}
+								}
 							}
-							
 						}
-						hutArrayLen -= 1;
-						if (hutArrayLen > 0) {
-							curHut = new Building(new Point(90, 230), "purple", "hut");
+						if (curTurn.player.num == 2) {
+							if (placingHuts) {
+								player2.settlements[chosenSettlementIndex].push(curHut);
+								hutsToPlace -= 1;
+								console.log("grid builidng length: " + theGrid[position[0][0]][position[1][0]].buildings.length);
+								console.log("grid level: " + theGrid[position[0][0]][position[1][0]].level);
+								if(theGrid[position[0][0]][position[1][0]].buildings.length == theGrid[position[0][0]][position[1][0]].level) {
+									var index = -1;
+									for (var i = 0; i < terrainHexs.length; i++) {
+										if (terrainHexs.position[0] == position[0][0] && terrainHexs.posiiton[1] == position[1][0]) {
+											console.log("INDEX" +  i);
+											index = i;
+										}
+									}
+									terrainHexs.splice(index, 1);
+								}
+								if (hutsToPlace == 0) {
+									placing = false;
+									placingHuts = false;
+								}
+							} else {
+								if (player2.settlements.length == 0) {
+									var settlement = [];
+									settlement.push(curHut);
+									player2.settlements.push(settlement);
+									player2.hutCount += 1;
+								} else {
+									add = isAddingToSettlement(position, player2.settlements);
+									if (add[0]) {
+										if (add[1].length > 1) {
+											player2.settlements = putInMultSettlements(player2.settlements, "hut", add[1]);
+										} else {
+											player2.settlements[add[1][0]].push(curHut);
+										}
+										player2.hutCount += 1;
+									} else {
+										var settlement = [];
+										settlement.push(curHut);
+										player2.settlements.push(settlement);
+										player2.hutCount += 1;
+									}
+								}
+							}
 						}
+						
+						if (curTurn.player.num == 1) {
+							hutArrayLen1 -= 1;
+							if (hutArrayLen1 > 0) {
+								curHut = new Building(new Point(90, 230), "purple", "hut");
+							}
+						} else {
+							hutArrayLen2 -= 1;
+							if (hutArrayLen2 > 0) {
+								curHut = new Building(new Point(90, 230), "blue", "hut");
+							}
+						}
+						drawAll = true;
 					}
-					drawTile(curTile, true);
-					drawRemainingText(stackTileArray.length, templeArrayLen, towerArrayLen, hutArrayLen);
-					drawPlayerText();
-					drawBuildingText();
-					drawSettlementText()
-					drawBuildings();
+					if (drawAll) {
+						curTurn.placedBuilding = true;
+						if (curTurn.placedBuilding && curTurn.placedTile && !placingHuts) {
+							if (curTurn.player.num == 1) {
+								curTurn = new Turn(player2, false, false);
+								curTower.color = "blue";
+								curHut.color = "blue";
+								curTemple.color = "blue";
+							} else {
+								curTurn = new Turn(player1, false, false);
+								curTower.color = "purple";
+								curHut.color = "purple";
+								curTemple.color = "purple";
+							}
+						}
+						context.clearRect(0, 0, 1000, 1000);
+						context.shadowOffsetX = 0;
+						context.shadowOffsetY = 0;
+						context.shadowBlur = 0;
+						drawGrid();
+						if (placingHuts || placing) {
+							console.log("placing");
+							console.log(terrainHexs);
+							drawSelectedTerrain(terrainHexs);
+						}
+						if (stackTileArray.length == 0) {
+							drawGameOverText();
+							drawAll = false;
+						} 
+						if (curTurn.player.num == 1) {
+							var zeros = 0;
+							if (hutArrayLen1 == 0) {
+								zeros += 1;
+							} 
+							if (towerArrayLen1 == 0) {
+								zeros += 1;
+							}
+							if (templeArrayLen1 == 0) {
+								zeros += 1;
+							}
+							if (zeros >= 2) {
+								drawGameOverTextPlayer1();
+							}
+						} 
+						if (curTurn.player.num == 2) {
+							var zeros = 0;
+							if (hutArrayLen2 == 0) {
+								zeros += 1;
+							} 
+							if (towerArrayLen2 == 0) {
+								zeros += 1;
+							}
+							if (templeArrayLen2 == 0) {
+								zeros += 1;
+							}
+							if (zeros >= 2) {
+								drawGameOverTextPlayer2();
+							}
+						} 
+					}
+					if (drawAll) {
+							console.log("j,,");
+							context.fillStyle = 'rgba(209, 173, 113, 1)';
+							context.shadowOffsetX = 8;
+							context.shadowOffsetY = 8;
+							context.shadowColor = 'black';
+							context.shadowBlur = 8;
+							context.fillRect(0, 0, 200, 540);
+							context.shadowOffsetX = 0;
+							context.shadowOffsetY = 0;
+							context.shadowBlur = 0;
+							if (curTurn.player.num == 1) {
+								context.fillStyle = "purple";
+							} else {
+								context.fillStyle = "blue";
+							}
+							context.fillRect(40, 490, 130, 30);
+							drawExpandText();
+							drawTile(curTile, true);
+							if (curTurn.player.num == 1) {
+								drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+							} else {
+								drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+							}
+							drawPlayerText(curTurn.player.num);
+							drawBuildingText();
+							drawSettlementText()
+							drawBuildings();
+							
+							drawPlaceTileText();
+						}
+						
+					
 				} else {
 					if (ok[1] == 0) {
 						drawBuildingNotOnAFieldText();
@@ -667,18 +1286,61 @@ function canvasApp(){
 		}
 	}
 	
-	function hasTower(settlement) {
-		for (var i = 0; i < settlement.length; i++) {
-			var s = settlement[i];
-			if (s.type == "tower") {
-				return true;
+	function hasTower(settlements, positions) {
+		for (var j = 0; j < positions.length; j++) {
+			var settlement = settlements[positons[j]];
+			for (var i = 0; i < settlement.length; i++) {
+				var s = settlement[i];
+				if (s.type == "tower") {
+					return true;
+				}
+			}
+		}	
+		return false;
+	}
+
+	function hasTemple(settlements, positions) {
+		for (var j = 0; j < positions.length; j++) {
+			var settlement = settlements[positons[j]];
+			for (var i = 0; i < settlement.length; i++) {
+				var s = settlement[i];
+				if (s.type == "temple") {
+					return true;
+				}
+			}
+		}	
+		return false;
+	}
+	
+	function putInMultSettlements(settlements, building, positions) {
+		var newSett = [];
+		for (var i = 0; i < positions.length; i++) {
+			var sett = settlements.splice(positions[i], 1);
+			for (var j = 0; j < sett.length; j++) {
+				newSett.push(sett[j]);
 			}
 		}
-		return false;
+		if (building == "hut") {
+			newSett.push(curHut);
+		} else if (building == "temple") {
+			newSett.push(curTemple);
+		} else {
+			newSett.push(curTower);
+		}
+		settlements.push(newSett);
+		return settlements
 	}
 	
 	function getDistance(point1, point2) {
 		return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
+	}
+	
+	function getHutNum(terrainHexs) {
+		var huts = 0;
+		for (var i = 0; i < terrainHexs.length; i++) {
+			huts += terrainHexs[i].level;
+		}
+		return huts;
 	}
 	
 	// works
@@ -796,6 +1458,74 @@ function canvasApp(){
 			// means volcanos are same direction
 			return [false, -4];
 		}
+		for (var i = 0; i < 3; i++) {
+			var x;
+			var y;
+			if (i == 0) {
+				x = hex1Pos[0];
+				y = hex1Pos[1];
+			} else if (i == 1) {
+				x = hex2Pos[0];
+				y = hex2Pos[1];
+			} else {
+				x = hex3Pos[0];
+				y = hex3Pos[1];
+			}
+			var buildings = theGrid[x][y].buildings;
+			for (var j = 0; j < buildings.length; j++) {
+				if (buildings[j].type == "temple" || buildings[j].type == "tower") {
+					// cant cover tower or temple
+					return [false, -5];
+				}
+			}
+		}
+		
+		if (player1.settlements.length > 0) {
+			console.log(player1.settlements)
+			for (var i = 0; i < player1.settlements.length; i++) {
+				var s = player1.settlements[i];
+				var sCovered = 0;	
+				for (var j = 0; j < s.length; j++) {
+					var x = s[j].position[0];
+					var y = s[j].position[1];
+					if (x == hex1Pos[0] && y == hex1Pos[1]) {
+						sCovered += 1;
+					} else if (x == hex2Pos[0] && y == hex2Pos[1]) {
+						sCovered += 1;
+					} else if (x == hex3Pos[0] && y == hex3Pos[1]) {
+						sCovered += 1;
+					}
+				}
+				console.log("slen: " + s.length);
+				console.log("scovered: " + sCovered);
+				if (s.length == sCovered) {
+					//cant cover whole settlement
+					return [false, -6];
+				}
+			}
+		}
+		if (player2.settlements.length > 0) {
+			console.log(player2.settlements);
+			for (var i = 0; i < player2.settlements.length; i++) {
+				var s = player2.settlements[i];
+				var sCovered = 0;	
+				for (var j = 0; j < s.length; j++) {
+					var x = s[j].position[0];
+					var y = s[j].position[1];
+					if (x == hex1Pos[0] && y == hex1Pos[1]) {
+						sCovered += 1;
+					} else if (x == hex2Pos[0] && y == hex2Pos[1]) {
+						sCovered += 1;
+					} else if (x == hex3Pos[0] && y == hex3Pos[1]) {
+						sCovered += 1;
+					}
+				}
+				if (s.Length == sCovered) {
+					//cant cover whole settlement
+					return [false, -6];
+				}
+			}
+		}
 		
 		var newCen = theGrid[hex1Pos[0]][hex1Pos[1]].center;
 		var dx = newCen.x - curTile.firstHex.center.x;
@@ -823,7 +1553,7 @@ function canvasApp(){
 		
 	}
 	
-	// 0 = not on a field, 1 = on a volcano, 2 = tower not on lvl 3, 3 = tower field not empty, 4 = hut must be level 1 empty
+	// 0 = not on a field, 1 = on a volcano, 2 = tower not on lvl 3, 3 = tower or temple field not empty, 4 = hut must be level 1 empty
 	function putBuildingOnTile(position, type) {
 		var row = position[0];
 		var col = position[1];
@@ -834,6 +1564,21 @@ function canvasApp(){
 			return [false, 1];
 		}
 		if (type == "hut") {
+			if (placingHuts) {
+				var ok = false;
+				for (var i = 0; i < terrainHexs.length; i++) {
+					if (theGrid[row][col] == terrainHexs[i]) {
+						if (theGrid[row][col].buildings.length < theGrid[row][col].level) {
+							theGrid[row][col].buildings.push(curHut);
+							ok = true;
+						}
+					}
+				}
+				if (ok == false) {
+					return [false, 4];
+				}
+				
+			}
 			if (settlements.length == 0) {
 				if (theGrid[row][col].level > 1) {
 					return [false, 4]; 
@@ -848,10 +1593,18 @@ function canvasApp(){
 			}  else {
 				if (theGrid[row][col].buildings.length > 0) {
 					return [false, 3];
-				} 
-				else {
+				} else {
+				//	theGrid[row][col].buildings.push(curTower);
 					return [true, -1];
 				}
+			}
+		}
+		if (type == "temple") {
+			if (theGrid[row][col].buildings.length > 0) {
+				return [false, 3];
+			} else {
+			//	theGrid[row][col].buildings.push
+				return [true, -1];
 			}
 		}
 	}
@@ -966,10 +1719,98 @@ function canvasApp(){
 		return false;
 	}
 	
+	function isAdjacentHex(mx, my, position) {
+		var x = position[0];
+		var y = position[1];
+		if (x > 0 && y > 0) {
+			console.log("x: " + x);
+			console.log("Y: " + y);
+			console.log("x is even: " + (x==0 || x%2 == 0));
+			if (x!=0 && x%2 != 0) {
+				if (clickInBuilding(mx, my, theGrid[x - 1][y - 1])) {
+					return theGrid[x - 1][y - 1].color;
+				}
+			} else {
+				if (clickInBuilding(mx, my, theGrid[x - 1][y + 1])) {
+					return theGrid[x - 1][y + 1].color;
+				}
+			}
+			if (clickInBuilding(mx, my, theGrid[x - 1][y])) {
+				return theGrid[x - 1][y].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x][y - 1])) {
+				return theGrid[x][y - 1].color;
+			}
+			if (x < theGrid.length) {
+				if (clickInBuilding(mx, my, theGrid[x + 1][y])) {
+					return theGrid[x + 1][y].color;
+				}
+				if (x!=0 && x%2 != 0) {
+					if (clickInBuilding(mx, my, theGrid[x + 1][y - 1])) {
+						return theGrid[x + 1][y - 1].color;
+					}
+				} else {
+					if (clickInBuilding(mx, my, theGrid[x + 1][y + 1])) {   
+						console.log("YEEEEEET");
+						return theGrid[x + 1][y + 1].color;
+					}
+				}
+				
+			}
+			if (y < theGrid[0].length) {
+				if (clickInBuilding(mx, my, theGrid[x][y + 1])) {
+					return theGrid[x][y + 1].color;
+				}
+			}
+		} else if (x > 0 && y == 0) {
+			if (clickInBuilding(mx, my, theGrid[x][y + 1])) {
+				return theGrid[x][y + 1].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x - 1][y])) {
+				return theGrid[x - 1][y].color;
+			}
+			if (x < theGrid.length) {
+				if (clickInBuilding(mx, my, theGrid[x + 1][y])) {
+					return theGrid[x + 1][y].color;
+				}
+			}	
+		} else if (x == 0 && y > 0) {
+			if (clickInBuilding(mx, my, theGrid[x][y - 1])) {
+				return theGrid[x][y - 1].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x + 1][y + 1])) {
+				return theGrid[x - 1][y + 1].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x + 1][y])) {
+				return theGrid[x + 1][y].color;
+			}
+			if (y < theGrid[0].length) {
+				if (clickInBuilding(mx, my, theGrid[x][y + 1])) {
+						return theGrid[x][y + 1].color;
+				}		
+			}
+		} else if (x == 0 && y == 0) {
+			if (clickInBuilding(mx, my, theGrid[x][y + 1])) {
+				return theGrid[x][y + 1].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x + 1][y])) {
+				return theGrid[x + 1][y].color;
+			}
+			if (clickInBuilding(mx, my, theGrid[x + 1][y + 1])) {
+				return theGrid[x + 1][y + 1].color;
+			}
+		}
+		console.log("false for all");
+		return "white";
+	}
+	
 	// returns t/f and the settlement index
-	function isAddingToSettlement(position) {
+	function isAddingToSettlement(position, settlements) {
 		var row = position[0][0];
 		var col = position[1][0];
+		var adjTo = [];
+		console.log("SETTLEMENTS");
+		console.log(settlements);
 		for (var i = 0; i < settlements.length; i++) {
 			var s = settlements[i];
 			for (var j = 0; j < s.length; j++) {
@@ -977,23 +1818,68 @@ function canvasApp(){
 				var bCol = s[j].position[1];
 				if (bRow == row) {
 					if (bCol == (col - 1) || bCol == (col + 1)) {
-						return [true, i];
 					}
 				} else if (bRow == (row - 1)) {
 					if (bCol == col || bCol == (col - 1)) {
-						return [true, i];
+						adjTo.push(i);
 					}
 				}
 				if (bRow == (row + 1)) {
 					if (bCol == col || bCol == (col - 1)) {
-						return [true, i];
+						adjTo.push(i);
 					}
 				}
 			}	
 		}
-		return [false, -1];
+		if (adjTo.length == 0) {
+			return [false, -1];
+		} else {
+			return [true, adjTo];
+		}
+	}
+
+	// this combines settlements if it is possible to - NEEDS TO BE FINISHED
+	function combineSettlements() {
+		var newSettlements = [];
+		for (var i = 0; i < settlements.length - 1; i++) {
+			var s1 = settlements[i];
+			var s2 = settlements[i+1];
+			var done = false;
+			for (var j = 0; j < s1.length; j++) {
+				for (var k = 0; k < s2.length; k++) {
+					if (!done) {
+						if (settlementIsAdj(s1[j], s2[k])) {
+							var s = s1.concact(s2);
+							newSettlements.push(s);
+
+						}
+					}
+				}
+			}
+		}
 	}
 	
+	function settlementIsAdj(building1, building2) {
+		var b1Row = building1.position[0];
+		var b1Col = building1.position[1];
+		var b2Row = building2.position[0];
+		var b2Col = building2.position[1];
+		if (b2Row == b1Row) {
+			if (b2Col == (b1Col - 1) || b2Col == (b1Col + 1)) {
+				return true;
+			}
+		} else if (b2Row == (b1Row + 1)) {
+			if (b2Col == (b1Col - 1) || b2Col == b1Col) {
+				return true;
+			}
+		} else if (b2Row == (b1Row - 1)) {
+			if (b2Col == (b1Col - 1) || b2Col == b1Col) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	//works
 	function adjustTile2(num, dx, dy) {
 		if (num == 1) {
@@ -1060,14 +1946,26 @@ function canvasApp(){
 	
 	function drawBuildings() {
 		var buildings = [];
-		if (hutArrayLen > 0) {
-			buildings.push(curHut);
-		}
-		if (templeArrayLen > 0) {
-			buildings.push(curTemple);
-		}
-		if (towerArrayLen > 0) {
-			buildings.push(curTower);
+		if (curTurn.player.num == 1) {
+			if (hutArrayLen1 > 0) {
+				buildings.push(curHut);
+			}
+			if (templeArrayLen1 > 0) {
+				buildings.push(curTemple);
+			}
+			if (towerArrayLen1 > 0) {
+				buildings.push(curTower);
+			}
+		} else {
+			if (hutArrayLen2 > 0) {
+				buildings.push(curHut);
+			}
+			if (templeArrayLen2 > 0) {
+				buildings.push(curTemple);
+			}
+			if (towerArrayLen2 > 0) {
+				buildings.push(curTower);
+			}
 		}
 		for (var i = 0; i < buildings.length; i++) {
 			var building = buildings[i];
@@ -1093,6 +1991,9 @@ function canvasApp(){
 		context.shadowOffsetY = 0;
 		context.shadowBlur = 0;
 		drawGrid();
+		if (placing || placingHuts) {
+			drawSelectedTerrain(terrainHexs);
+		}
 		context.beginPath();
 		context.shadowOffsetX = 0;
 		context.shadowOffsetY = 0;
@@ -1227,6 +2128,8 @@ function canvasApp(){
 		return true;
 	}
 	
+
+	
 	function clickInBuilding(mx, my, building) {
 		var corners = building.corners
 		if (mx > corners[5].x || mx < corners[1].x) {
@@ -1266,6 +2169,128 @@ function canvasApp(){
 		return true;
 	}
 	
+	function clickOnExpand(mx, my) {
+		if (mx > 40 && my > 490 && mx < 170 && my < 520) {
+			if (curTurn.player.settlements.length > 0) {
+				return true;
+			}
+		} 
+		return false;
+	}
+	
+	function clickOnASettlement(mx, my, settlements) {
+		for (var i = 0; i < settlements.length; i++) {
+			var settlement = settlements[i];
+			for (var j = 0; j < settlement.length; j++) {
+				var x = settlement[j].position[0];
+				var y = settlement[j].position[1];
+				if (clickInBuilding(mx, my, theGrid[x][y])) {
+					return i;
+				}
+			}
+		} 
+		return -1;
+	}
+	
+	function pickingATerrain(mx, my, settlement) {
+		for (var i = 0; i < settlement.length; i++) {
+			var x = settlement[i].position[0];
+			var y = settlement[i].position[1];
+			var color = isAdjacentHex(mx, my, settlement[i].position);
+			console.log(color);
+			if (color != "white") {
+				return color;
+			} else {
+				return -1;
+			}
+		}
+	}
+	
+	function getTerrainHexs(s, color) {
+		var positions = [];
+		var hexs = [];
+		for (var i = 0; i < s.length; i++) {
+			positions.push(s[i].position);
+		}
+		console.log("COLRO: " + color);
+		for (var i = 0; i < positions.length; i++) {
+			var x = positions[i][0];
+			var y = positions[i][1];
+			if (x > 0 && y > 0) {
+				if (x!=0 && x%2 !=0)  {
+					if (theGrid[x - 1][y - 1].color == color && positions.indexOf([(x-1), (y-1)]) == -1) {
+						hexs.push(theGrid[x][y-1]);
+					}
+				} else {
+					if (theGrid[x - 1][y + 1].color == color && positions.indexOf([(x-1), (y-1)]) == -1) {
+						hexs.push(theGrid[x][y-1]);
+					}
+				}
+				if (theGrid[x - 1][y].color == color && positions.indexOf([(x-1), y]) == -1) {
+					hexs.push(theGrid[x - 1][y]);
+				}
+				if (theGrid[x][y - 1].color == color && positions.indexOf([x, (y-1)]) == -1) {
+					hexs.push(theGrid[x][y-1]);
+				}
+				if (y < theGrid[0].length) {
+					if (theGrid[x][y + 1].color == color && positions.indexOf([x, (y+1)]) == -1) {
+						hexs.push(theGrid[x][y+1]);
+					}
+				}
+				if (x < theGrid.length) {
+					if (x!=0 && x%2 !=0)  {
+						if (theGrid[x+1][y - 1].color == color && positions.indexOf([(x+1), (y-1)]) == -1) {
+							hexs.push(theGrid[x+1][y-1]);
+						}
+					} else {
+						if (theGrid[x+1][y + 1].color == color && positions.indexOf([(x+1), (y+1)]) == -1) {
+							hexs.push(theGrid[x+1][y+1]);
+						}
+					}
+					if (theGrid[x+1][y].color == color && positions.indexOf([(x+1), y]) == -1) {
+						hexs.push(theGrid[x+1][y]);
+					}
+				} 
+			} else if (x == 0 && y == 0) {
+				if (theGrid[x][y + 1].color == color && positions.indexOf([x, (y+1)]) == -1) {
+					hexs.push(theGrid[x][y+1]);
+				}
+				if (theGrid[x+1][y].color == color && positions.indexOf([(x+1), y]) == -1) {
+					hexs.push(theGrid[x+1][y]);
+				}
+			} else if (x == 0 && y > 0) {
+				if (theGrid[x][y - 1].color == color && positions.indexOf([x, (y-1)]) == -1) {
+					hexs.push(theGrid[x][y-1]);
+				}
+				if (y < theGrid[0].length) {
+					if (theGrid[x][y + 1].color == color && positions.indexOf([x, (y+1)]) == -1) {
+						hexs.push(theGrid[x][y+1]);
+					}
+				}
+				if (theGrid[x+1][y - 1].color == color && positions.indexOf([(x+1), (y-1)]) == -1) {
+					hexs.push(theGrid[x+1][y-1]);
+				}
+				if (theGrid[x+1][y].color == color && positions.indexOf([(x+1), y]) == -1) {
+					hexs.push(theGrid[x+1][y]);
+				}
+			} else if (x > 0 && y == 0) {
+				if (theGrid[x - 1][y].color == color && positions.indexOf([(x-1), y]) == -1) {
+					hexs.push(theGrid[x - 1][y]);
+				}
+				if (theGrid[x][y + 1].color == color && positions.indexOf([x, (y+1)]) == -1) {
+					hexs.push(theGrid[x][y+1]);
+				}
+				if (x < theGrid.length) {
+					if (theGrid[x+1][y].color == color && positions.indexOf([(x+1), y]) == -1) {
+						hexs.push(theGrid[x+1][y]);
+					}
+				} 
+			}
+		}
+		console.log(hexs);
+		return hexs;
+	}
+	
 	// needs work
 	function eventKeyPressed(e) {
 		var letter = String.fromCharCode(e.keyCode);
@@ -1298,10 +2323,25 @@ function canvasApp(){
 			context.shadowOffsetY = 4;
 			context.shadowColor = 'black';
 			context.shadowBlur = 4;
-			context.fillRect(0, 0, 200, 500);
-			drawPlayerText();
+			context.fillRect(0, 0, 200, 540);
+			context.shadowOffsetX = 0;
+			context.shadowOffsetY = 0;
+			context.shadowBlur = 0;
+			context.fillStyle = "purple"
+			context.fillRect(40, 490, 130, 30);
+			drawExpandText();
+			drawPlayerText(curTurn.player.num);
+			if (curTurn.placedTile) {
+				drawPlaceBuildingText(); 
+			} else {
+				drawPlaceTileText();
+			}
 			drawBuildingText();
-			drawRemainingText(stackTileArray.length, templeArrayLen, towerArrayLen, hutArrayLen);
+			if (curTurn.player.num == 1) {
+				drawRemainingText(stackTileArray.length, templeArrayLen1, towerArrayLen1, hutArrayLen1);
+			} else {
+				drawRemainingText(stackTileArray.length, templeArrayLen2, towerArrayLen2, hutArrayLen2);
+			}
 			moveTileToOrig();
 			moveBuildingsToOrig();
 			drawTile(curTile, true);
@@ -1369,7 +2409,7 @@ function canvasApp(){
 	
 	// ok for now
 	function drawRemainingText(tileLength, templeLength, towerLength, hutLength) {
-		context.font = "18px Arial";
+		context.font = "14px Arial";
 		context.shadowOffsetX = 0;
 		context.shadowOffsetY = 0;
 		context.shadowBlur = 0;
@@ -1388,14 +2428,58 @@ function canvasApp(){
 	}
 	
 	// ok for now
-	function drawPlayerText() {
-		context.font = "24px Arial";
+	function drawPlayerText(player) {
+		context.font = "16px Arial";
 		context.shadowOffsetX = 2;
 		context.shadowOffsetY = 2;
-		context.shadowColor = 'black';
+		context.shadowColor = 'white';
 		context.shadowBlur = 2;
-		context.fillStyle = 'white';
-		context.fillText("Player 1's Turn...", 10, 20);
+		if (player == 1) {
+			context.fillStyle = 'purple';
+		} else {
+			context.fillStyle = 'blue';
+		}
+		context.fillText("Player " + player + "'s Turn...", 10, 15);
+	}
+	
+	function drawPlaceTileText() {
+		context.font = "16px Arial";
+		context.shadowOffsetX = 2;
+		context.shadowOffsetY = 2;
+		context.shadowColor = 'white';
+		context.shadowBlur = 2;
+		context.fillStyle = 'green';
+		context.fillText("Place a tile.", 10, 30);
+	}
+	
+	function drawClickOnSettlementText() {
+		context.font = "16px Arial";
+		context.shadowOffsetX = 2;
+		context.shadowOffsetY = 2;
+		context.shadowColor = 'white';
+		context.shadowBlur = 2;
+		context.fillStyle = 'green';
+		context.fillText("Click on a settlement.", 10, 30);
+	}
+	
+	function drawPlaceBuildingText() {
+		context.font = "16px Arial";
+		context.shadowOffsetX = 2;
+		context.shadowOffsetY = 2;
+		context.shadowColor = 'white';
+		context.shadowBlur = 2;
+		context.fillStyle = 'green';
+		context.fillText("Place a building.", 10, 30);
+	}
+	
+	function drawChooseTerrainText() {
+		context.font = "13px Arial";
+		context.shadowOffsetX = 2;
+		context.shadowOffsetY = 2;
+		context.shadowColor = 'white';
+		context.shadowBlur = 2;
+		context.fillStyle = 'green';
+		context.fillText("Choose a surrounding terrain type.", 10, 30);
 	}
 	
 	function drawSettlementText() {
@@ -1403,8 +2487,23 @@ function canvasApp(){
 		context.shadowOffsetX = 1;
 		context.shadowOffsetY = 1;
 		context.shadowBlur = 1;
+		context.shadowColor = 'black';
 		context.fillStyle = "white";
-		context.fillText("current settlements: " + settlements.length, 10, 190);
+		if (curTurn.player.num == 1) {
+			context.fillText("current settlements: " + player1.settlements.length, 10, 190);
+		} else {
+			context.fillText("current settlements: " + player2.settlements.length, 10, 190);
+		}
+	}
+	
+	function drawPlaceBuildingsText() {
+		context.font = "13px Arial";
+		context.shadowOffsetX = 2;
+		context.shadowOffsetY = 2;
+		context.shadowColor = 'white';
+		context.shadowBlur = 2;
+		context.fillStyle = 'green';
+		context.fillText("Place one hut/level on each highlighted terrain.", 10, 30);
 	}
 	
 	function drawBuildingText() {
@@ -1450,6 +2549,22 @@ function canvasApp(){
 		context.fillText("Tile must be adjacent.", 300, 300);
 	}
 	
+	function drawCantCoverFullSettle() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200);
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Tile must be adjacent.", 300, 300);
+		context.fillText("Tile must be adjacent.", 300, 300);
+	}
+	
 	function drawWrongLevelsText() {
 		context.font = "50px Arial";
 		context.shadowOffsetX = 4;
@@ -1462,8 +2577,8 @@ function canvasApp(){
 		context.strokeText("INVALID MOVE!", 300, 200);
 		context.fillText("INVALID MOVE!", 300, 200);
 		context.font = "35px Arial";
-		context.strokeText("Tile must be placed on equal levels.", 100, 300);
-		context.fillText("Tile must be placed on equal levels.", 100, 300);
+		context.strokeText("Cannot cover an entire settlement.", 100, 300);
+		context.fillText("Cannot cover an entire settlement.", 100, 300);
 	}
 	
 	function drawNotVolColorText() {
@@ -1515,6 +2630,22 @@ function canvasApp(){
 		context.strokeText("Settlement already has a tower in it.", 50, 300);
 		context.fillText("Settlement already has a tower in it.", 50, 300);
 	}
+
+	function drawSettlementHasTempleText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Settlement already has a temple in it.", 50, 300);
+		context.fillText("Settlement already has a temple in it.", 50, 300);	
+	}
 	
 	function drawTowerMustBeAddedToSettlementText() {
 		context.font = "50px Arial";
@@ -1530,6 +2661,22 @@ function canvasApp(){
 		context.font = "35px Arial";
 		context.strokeText("Tower must be added to a settlement.", 150, 300);
 		context.fillText("Tower must be added to a settlement", 150, 300);
+	}
+	
+	function drawTempleMustBeAddedToSettlementText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Temple must be added to a settlement.", 150, 300);
+		context.fillText("Temple must be added to a settlement", 150, 300);
 	}
 	
 	function drawBuildingNotOnAFieldText() {
@@ -1579,6 +2726,23 @@ function canvasApp(){
 		context.strokeText("Tower must be on an empty level three field.", 100, 300);
 		context.fillText("Tower must be on an empty level three field.", 100, 300);
 	}
+
+	function drawSettlementMustBeLengthThreeText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "30px Arial";
+		context.strokeText("Settlement must have a size of at least three fields to add temple.", 40, 300);
+		context.fillText("Settlement must have a size of at least three fields to add temple.", 40, 300);
+	}
+	
 	
 	function drawHutMustBeOnOne() {
 		context.font = "50px Arial";
@@ -1595,6 +2759,157 @@ function canvasApp(){
 		context.strokeText("New settlement must be started on an empty level one field.", 100, 300);
 		context.fillText("New settlement must be started on an empty level one field.", 100, 300);
 	}
+	
+	function drawDontCoverTempleText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Cannot cover a temple or a tower.", 100, 300);
+		context.fillText("Cannot cover a temple or a tower.", 100, 300);
+	}
+	
+	function drawAlreadyPlacedTileText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Player " + curTurn.player.num + " already placed a tile this turn", 150, 300);
+		context.strokeText("Player " + curTurn.player.num + " must now place a building.", 150, 350);
+		context.fillText("Player " + curTurn.player.num + " already placed a tile this turn", 150, 300);
+		context.fillText("Player " + curTurn.player.num + " must now place a building.", 150, 350);
+	}
+	
+	function drawPlaceTileFirstText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Player " + curTurn.player.num + " must place a tile before placing a building", 100, 300);
+		context.fillText("Player " + curTurn.player.num + " must place a tile before placing a building", 100, 300);
+	} 
+	
+	function drawMustClickOnAdjTerrainText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("INVALID MOVE!", 300, 200)
+		context.fillText("INVALID MOVE!", 300, 200);
+		context.font = "35px Arial";
+		context.strokeText("Must click on an adjacent terrain.", 100, 300);
+		context.fillText("Must click on an adjacent terrain.", 100, 300);
+	}
+	
+	function drawGameOverText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("GAME OVER", 300, 200)
+		context.fillText("GAME OVER", 300, 200);
+		if (player1.templeCount > player2.templeCount) {
+			context.strokeText("Winner: Player 1!", 300, 250);
+			context.fillText("Winner: Player 1!", 300, 250);
+		} else if (player1.templeCount < player2.templeCount) {
+			context.strokeText("Winner: Player 2!", 300, 250);
+			context.fillText("Winner: Player 2!", 300, 250);
+		} else if ((player1.towerCount + player1.templeCount) > (player1.towerCount + player1.templeCount)) {
+			context.strokeText("Winner: Player 1!", 300, 250);
+			context.fillText("Winner: Player 1!", 300, 250);
+		} else if ((player1.towerCount + player1.templeCount) < (player1.towerCount + player1.templeCount)) {
+			context.strokeText("Winner: Player 2!", 300, 250);
+			context.fillText("Winner: Player 2!", 300, 250);
+		} else if ((player1.towerCount + player1.templeCount + player1.hutCount) > (player1.towerCount + player1.templeCount + player2.hutCount)) {
+			context.strokeText("Winner: Player 1!", 300, 250);
+			context.fillText("Winner: Player 1!", 300, 250);
+		} else {
+			context.strokeText("Winner: Player 2!", 300, 250);
+			context.fillText("Winner: Player 2!", 300, 250);
+		}
+	}
+	
+	function drawGameOverTextPlayer1() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("GAME OVER", 300, 200)
+		context.fillText("GAME OVER", 300, 200);
+		context.strokeText("Player 1 wins, finished placing all buildings of two types.", 100, 250);
+		context.fillText("Player 1 wins, finished placing all buildings of two types.", 100, 250);
+	}
+	
+	function drawGameOverTextPlayer2() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("GAME OVER", 300, 200)
+		context.fillText("GAME OVER", 300, 200);
+		context.strokeText("Player 2 wins, finished placing all buildings of two types.", 100, 250);
+		context.fillText("Player 2 wins, finished placing all buildings of two types.", 100, 250);
+	}
+	
+	function drawMustPlaceHutsText() {
+		context.font = "50px Arial";
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+		context.shadowColor = 'black';
+		context.shadowBlur = 4;
+		context.fillStyle = 'red';
+		context.strokeStyle = 'black';
+		context.lineWidth = 4;
+		context.strokeText("Must place huts.", 300, 200)
+		context.fillText("Must place huts.", 300, 200);
+	}
+	
+	function drawExpandText() {
+		context.font = "12px Arial";
+		context.shadowOffSetX = 0;
+		context.shadowOffSetY = 0;
+		context.shadowBlur = 0;
+		context.fillStyle = "white"
+		context.fillText("Expand a settlement", 50, 510);
+	}
+	
 	
 	// ok for now
 	function Point(x, y) {
@@ -1645,6 +2960,20 @@ function canvasApp(){
 		this.rotated = false;
 		this.deg = 0;
 		this.top = [1];
+	}
+	
+	function Player(num) {
+		this.num = num;
+		this.settlements = [];
+		this.hutCount = 0;
+		this.templeCount = 0;
+		this.towerCount = 0;
+	}
+	
+	function Turn(player, placedTile, placedBuilding) {
+		this.player = player;
+		this.placedTile = placedTile;
+		this.placedBuilding = placedBuilding;
 	}
 
 	Tile.prototype.contains = function(mx, my) {
